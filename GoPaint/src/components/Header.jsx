@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const NAV_LINKS = [
-  { label: "Home", href: "#top" },
-  { label: "Colors", href: "#colors" },
-  { label: "Find Painters", href: "#painters" },
-  { label: "How It Works", href: "#how-it-works" },
+  { label: "Home", href: "/" },
+  { label: "Colors", href: "/colors" },
+  { label: "Find Painters", href: "/" },
+  { label: "How It Works", href: "/" },
 ];
 
-export default function Header() {
+export default function Header({ forceScrolled = false } = {}) {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const goToLogin = () => {
+    setMenuOpen(false);
+    navigate("/login");
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -38,22 +45,20 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  const navLinkClass = scrolled
+  const effectiveScrolled = forceScrolled || scrolled;
+
+  const navLinkClass = effectiveScrolled
     ? "text-sm font-medium text-slate-600 transition hover:text-slate-900"
     : "text-sm font-medium text-white/90 transition hover:text-white";
 
-  const signInClass = scrolled
-    ? "text-sm font-semibold text-slate-700 transition hover:text-slate-900"
-    : "text-sm font-semibold text-white/90 transition hover:text-white";
-
-  const menuBtnClass = scrolled
+  const menuBtnClass = effectiveScrolled
     ? "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-200 text-slate-700 md:hidden"
     : "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/25 text-white md:hidden";
 
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        scrolled
+        effectiveScrolled
           ? "border-b border-neutral-200 bg-white shadow-sm"
           : "border-b border-transparent bg-transparent"
       }`}
@@ -67,7 +72,7 @@ export default function Header() {
           <span className="font-heading text-2xl font-bold tracking-tight">
             <span
               className={`transition-colors duration-300 ${
-                scrolled ? "text-slate-900" : "text-white"
+                effectiveScrolled ? "text-slate-900" : "text-white"
               }`}
             >
               Go
@@ -81,22 +86,30 @@ export default function Header() {
           aria-label="Primary navigation"
         >
           {NAV_LINKS.map((item) => (
-            <a key={item.href} href={item.href} className={navLinkClass}>
+            <a
+              key={item.href}
+              href={item.href}
+              className={navLinkClass}
+              onClick={(e) => {
+                if (item.href.startsWith("/")) {
+                  e.preventDefault();
+                  navigate(item.href);
+                }
+              }}
+            >
               {item.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-5 md:flex">
-          <a href="#contact" className={signInClass}>
-            Sign In
-          </a>
-          <a
-            href="#cta"
+        <div className="hidden md:block">
+          <button
+            type="button"
+            onClick={goToLogin}
             className="rounded-lg bg-[#FF8022] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
           >
-            Get Started
-          </a>
+            Sign In
+          </button>
         </div>
 
         <button
@@ -138,7 +151,7 @@ export default function Header() {
       <div
         id="mobile-nav"
         className={`border-t px-4 py-4 md:hidden ${
-          scrolled
+          effectiveScrolled
             ? "border-neutral-200 bg-white"
             : "border-white/15 bg-black/50 backdrop-blur-md"
         } ${menuOpen ? "block" : "hidden"}`}
@@ -149,33 +162,28 @@ export default function Header() {
               key={item.href}
               href={item.href}
               className={`rounded-lg px-2 py-2.5 text-sm font-medium ${
-                scrolled
+                effectiveScrolled
                   ? "text-slate-700 hover:bg-neutral-50"
                   : "text-white/90 hover:bg-white/10"
               }`}
-              onClick={() => setMenuOpen(false)}
+              onClick={(e) => {
+                if (item.href.startsWith("/")) {
+                  e.preventDefault();
+                  navigate(item.href);
+                }
+                setMenuOpen(false);
+              }}
             >
               {item.label}
             </a>
           ))}
-          <a
-            href="#contact"
-            className={`rounded-lg px-2 py-2.5 text-sm font-semibold ${
-              scrolled
-                ? "text-slate-700 hover:bg-neutral-50"
-                : "text-white/90 hover:bg-white/10"
-            }`}
-            onClick={() => setMenuOpen(false)}
+          <button
+            type="button"
+            onClick={goToLogin}
+            className="mt-2 w-full rounded-lg bg-[#FF8022] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#e8721a]"
           >
             Sign In
-          </a>
-          <a
-            href="#cta"
-            className="mt-2 rounded-lg bg-[#FF8022] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[#e8721a]"
-            onClick={() => setMenuOpen(false)}
-          >
-            Get Started
-          </a>
+          </button>
         </nav>
       </div>
     </header>

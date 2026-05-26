@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom";
+
 const PLATFORM = [
-  { label: "Color Explorer", href: "#services" },
+  { label: "Color Explorer", href: "/colors" },
   { label: "Room Visualizer", href: "#ai-design" },
   { label: "Find Painters", href: "#painters" },
   { label: "Post a Project", href: "#cta" },
@@ -77,12 +79,21 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {PLATFORM.map((l) => (
                 <li key={l.label}>
-                  <a
-                    href={l.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
-                  >
-                    {l.label}
-                  </a>
+                  {l.href.startsWith("/") ? (
+                    <Link
+                      to={l.href}
+                      className="text-sm text-gray-400 transition-colors hover:text-white"
+                    >
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={l.href}
+                      className="text-sm text-gray-400 transition-colors hover:text-white"
+                    >
+                      {l.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

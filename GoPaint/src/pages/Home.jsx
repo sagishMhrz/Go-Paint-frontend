@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import HomeImage from "../assets/Home.png";
 
 const TONE_TABS = ["All", "Warm", "Cool", "Pastel", "Neutral"];
@@ -403,7 +404,7 @@ export default function Home() {
               href="#cta"
               className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#FF7A30] px-6 py-3 font-body text-sm font-semibold text-white transition hover:bg-[#e86d28] sm:rounded-full sm:py-0"
             >
-              Get Started
+              Search
             </a>
           </div>
 
@@ -456,13 +457,13 @@ export default function Home() {
                 Curated by our design team based on popular choices this season.
               </p>
             </div>
-            <a
-              href="#"
+            <Link
+              to="/colors"
               className="inline-flex items-center gap-1 font-body text-sm font-semibold text-[#FF7A30] transition hover:text-[#e86d28]"
             >
               View All Colors
               <span aria-hidden>→</span>
-            </a>
+            </Link>
           </div>
 
           <div
@@ -791,18 +792,18 @@ export default function Home() {
             GoPaint Nepal.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="#top"
+            <Link
+              to="/signup"
               className="inline-flex w-full max-w-xs items-center justify-center rounded-full bg-[#FF7A30] px-8 py-3.5 font-body text-sm font-semibold text-white transition hover:bg-[#e86d28] sm:w-auto"
             >
               Get Started Now
-            </a>
-            <a
-              href="#painters"
+            </Link>
+            <Link
+              to="/painter-signup"
               className="inline-flex w-full max-w-xs items-center justify-center rounded-full border-2 border-white/80 bg-transparent px-8 py-3.5 font-body text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
             >
               Join as Painter
-            </a>
+            </Link>
           </div>
 
           <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-4 font-body text-sm text-white/80 sm:grid-cols-4">

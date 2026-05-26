@@ -1,19 +1,24 @@
 import { Routes, Route } from "react-router-dom";
-import { BrowserRouter } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
+import Colors from "./pages/Colors";
+import Login from "./pages/Login";
+import ClientSignUp from "./pages/ClientSignUp";
+import PainterSignUp from "./pages/PainterSignUp";
 
 import "./App.css";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<ClientSignUp />} />
+      <Route path="/painter-signup" element={<PainterSignUp />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="colors" element={<Colors />} />
+      </Route>
+    </Routes>
   );
 }
 
