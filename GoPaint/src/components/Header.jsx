@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Colors", href: "/colors" },
-  { label: "Find Painters", href: "/" },
-  { label: "How It Works", href: "/" },
+  { label: "Find Painters", href: "/find-painters" },
+  { label: "How It Works", href: "/how-it-works" },
 ];
 
 export default function Header({ forceScrolled = false } = {}) {

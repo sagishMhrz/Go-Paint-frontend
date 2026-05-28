@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 const PLATFORM = [
   { label: "Color Explorer", href: "/colors" },
   { label: "Room Visualizer", href: "#ai-design" },
-  { label: "Find Painters", href: "#painters" },
+  { label: "Find Painters", href: "/find-painters" },
   { label: "Post a Project", href: "#cta" },
 ];
 
 const FOR_PAINTERS = [
-  { label: "Join as Painter", href: "#" },
+  { label: "Join as Painter", href: "/painter-signup" },
   { label: "Painter Dashboard", href: "#" },
   { label: "Browse Projects", href: "#" },
   { label: "Pricing & Fees", href: "#" },

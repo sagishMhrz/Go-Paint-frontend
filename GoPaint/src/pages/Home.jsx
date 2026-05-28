@@ -409,12 +409,12 @@ export default function Home() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="#painters"
+            <Link
+              to="/find-painters"
               className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-body text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
             >
               Find a Painter
-            </a>
+            </Link>
             <a
               href="#services"
               className="rounded-full border border-white/30 bg-white/10 px-4 py-2 font-body text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
@@ -547,10 +547,10 @@ export default function Home() {
                   <p className="font-body text-sm font-semibold text-slate-900">
                     {p.name}
                   </p>
-                  <span className="flex items-center gap-1 font-body text-xs text-slate-400">
+                  {/* <span className="flex items-center gap-1 font-body text-xs text-slate-400">
                     <span aria-hidden>♥</span>
                     {p.likes}
-                  </span>
+                  </span> */}
                 </div>
               </article>
             ))}
@@ -565,7 +565,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-[#FF7A30]/20 px-3 py-1 font-body text-xs font-semibold uppercase tracking-wide text-[#FF7A30]">
-              <span aria-hidden>✦</span> AI-powered
+              AI-powered
             </span>
             <h2 className="mt-5 text-3xl font-bold leading-tight text-white sm:text-4xl">
               Design Your Dream Space with{" "}
@@ -594,7 +594,6 @@ export default function Home() {
               href="#cta"
               className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#FF7A30] px-6 py-3.5 font-body text-sm font-semibold text-white transition hover:bg-[#e86d28]"
             >
-              <span aria-hidden>✨</span>
               Try AI Design Free
             </a>
           </div>
@@ -672,13 +671,12 @@ export default function Home() {
                 Verified professionals with proven track records across Nepal.
               </p>
             </div>
-            <a
-              href="#painters"
+            <Link
+              to="/find-painters"
               className="inline-flex items-center gap-1 font-body text-sm font-semibold text-[#FF7A30] transition hover:text-[#e86d28] lg:shrink-0"
             >
-              Browse All Painters
-              <span aria-hidden>→</span>
-            </a>
+              Browse All Painters <span aria-hidden>→</span>
+            </Link>
           </div>
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

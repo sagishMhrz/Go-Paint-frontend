@@ -5,7 +5,10 @@ import Footer from "./Footer";
 
 const Layout = () => {
   const { pathname } = useLocation();
-  const forceScrolledHeader = pathname === "/colors";
+  const forceScrolledHeader =
+    pathname === "/colors" ||
+    pathname === "/find-painters" ||
+    pathname === "/how-it-works";
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
