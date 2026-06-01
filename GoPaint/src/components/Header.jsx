@@ -1,22 +1,67 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const NAV_LINKS = [
+const PUBLIC_NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Colors", href: "/colors" },
   { label: "Find Painters", href: "/find-painters" },
   { label: "How It Works", href: "/how-it-works" },
 ];
 
-export default function Header({ forceScrolled = false } = {}) {
+const AUTH_NAV_LINKS = [
+  { label: "Home", href: "/" },
+  { label: "Dashboard", href: "/user-dashboard" },
+  { label: "Projects", href: "/#projects" },
+  { label: "Colors", href: "/colors" },
+  { label: "Find Painters", href: "/find-painters" },
+  { label: "Visualize", href: "/#visualize" },
+  // { label: "AI Design", href: "/#ai-design" },
+];
+
+const AUTH_STORAGE_KEY = "gopaint_auth";
+
+export function setLoggedIn(role = "client") {
+  localStorage.setItem(AUTH_STORAGE_KEY, role);
+}
+
+export function clearLoggedIn() {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+export function isUserLoggedIn() {
+  return localStorage.getItem(AUTH_STORAGE_KEY) === "client";
+}
+
+export default function Header({
+  forceScrolled = false,
+  isLoggedIn: isLoggedInProp,
+} = {}) {
   const navigate = useNavigate();
+  const { pathname, hash } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [authFromStorage, setAuthFromStorage] = useState(isUserLoggedIn);
+
+  const isLoggedIn = isLoggedInProp ?? authFromStorage;
+  const navLinks = isLoggedIn ? AUTH_NAV_LINKS : PUBLIC_NAV_LINKS;
 
   const goToLogin = () => {
     setMenuOpen(false);
     navigate("/login");
   };
+
+  const signOut = () => {
+    clearLoggedIn();
+    setAuthFromStorage(false);
+    setProfileOpen(false);
+    setMenuOpen(false);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    setAuthFromStorage(isUserLoggedIn());
+  }, [pathname]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -37,23 +82,63 @@ export default function Header({ forceScrolled = false } = {}) {
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !profileOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setProfileOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [menuOpen]);
+  }, [menuOpen, profileOpen]);
 
-  const effectiveScrolled = forceScrolled || scrolled;
+  const effectiveScrolled = forceScrolled || scrolled || isLoggedIn;
 
-  const navLinkClass = effectiveScrolled
-    ? "text-sm font-medium text-slate-600 transition hover:text-slate-900"
-    : "text-sm font-medium text-white/90 transition hover:text-white";
+  const isActiveLink = (href) => {
+    if (href.includes("#")) {
+      const [path, linkHash] = href.split("#");
+      return pathname === path && hash === `#${linkHash}`;
+    }
+    return pathname === href;
+  };
+
+  const navLinkClass = (href) => {
+    const active = isLoggedIn && isActiveLink(href);
+    if (active) {
+      return "relative text-sm font-medium text-[#FF8022] after:absolute after:-bottom-3 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-[#FF8022]";
+    }
+    return effectiveScrolled
+      ? "text-sm font-medium text-slate-600 transition hover:text-slate-900"
+      : "text-sm font-medium text-white/90 transition hover:text-white";
+  };
+
+  const mobileNavLinkClass = (href) => {
+    const active = isLoggedIn && isActiveLink(href);
+    if (active) {
+      return "rounded-lg bg-orange-50 px-2 py-2.5 text-sm font-medium text-[#FF8022]";
+    }
+    return `rounded-lg px-2 py-2.5 text-sm font-medium ${
+      effectiveScrolled
+        ? "text-slate-700 hover:bg-neutral-50"
+        : "text-white/90 hover:bg-white/10"
+    }`;
+  };
 
   const menuBtnClass = effectiveScrolled
     ? "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-200 text-slate-700 md:hidden"
     : "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/25 text-white md:hidden";
+
+  const handleNavClick = (href, e) => {
+    if (href.startsWith("/")) {
+      e.preventDefault();
+      const [path, linkHash] = href.split("#");
+      navigate(linkHash ? `${path}#${linkHash}` : path);
+    }
+    setMenuOpen(false);
+  };
+
+  const logoHref = isLoggedIn ? "/user-dashboard" : "/";
 
   return (
     <header
@@ -65,9 +150,13 @@ export default function Header({ forceScrolled = false } = {}) {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
         <a
-          href="#top"
+          href={logoHref}
           aria-label="GoPaint home"
           className="shrink-0 outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF8022]"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate(logoHref);
+          }}
         >
           <span className="font-heading text-2xl font-bold tracking-tight">
             <span
@@ -82,35 +171,113 @@ export default function Header({ forceScrolled = false } = {}) {
         </a>
 
         <nav
-          className="hidden items-center gap-8 md:flex"
+          className="hidden items-center gap-6 lg:gap-8 md:flex"
           aria-label="Primary navigation"
         >
-          {NAV_LINKS.map((item) => (
+          {navLinks.map((item) => (
             <a
-              key={item.href}
+              key={item.label}
               href={item.href}
-              className={navLinkClass}
-              onClick={(e) => {
-                if (item.href.startsWith("/")) {
-                  e.preventDefault();
-                  navigate(item.href);
-                }
-              }}
+              className={navLinkClass(item.href)}
+              onClick={(e) => handleNavClick(item.href, e)}
             >
               {item.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden md:block">
-          <button
-            type="button"
-            onClick={goToLogin}
-            className="rounded-lg bg-[#FF8022] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
-          >
-            Sign In
-          </button>
-        </div>
+        {isLoggedIn ? (
+          <div className="hidden items-center gap-2 md:flex">
+            <button
+              type="button"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-neutral-100"
+              aria-label="Notifications"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                aria-hidden
+              >
+                <path
+                  d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span
+                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FF8022]"
+                aria-hidden
+              />
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 py-1 pl-1 pr-2 transition hover:bg-neutral-100"
+                aria-expanded={profileOpen}
+                aria-haspopup="true"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-[#FF8022] text-xs font-bold text-white">
+                  AK
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-slate-500"
+                  aria-hidden
+                >
+                  <path
+                    d="M6 9l6 6 6-6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
+                  <button
+                    type="button"
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    type="button"
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
+                  >
+                    Settings
+                  </button>
+                  <hr className="my-1 border-neutral-100" />
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="hidden md:block">
+            <button
+              type="button"
+              onClick={goToLogin}
+              className="rounded-lg bg-[#FF8022] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
+            >
+              Sign In
+            </button>
+          </div>
+        )}
 
         <button
           type="button"
@@ -157,33 +324,33 @@ export default function Header({ forceScrolled = false } = {}) {
         } ${menuOpen ? "block" : "hidden"}`}
       >
         <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-          {NAV_LINKS.map((item) => (
+          {navLinks.map((item) => (
             <a
-              key={item.href}
+              key={item.label}
               href={item.href}
-              className={`rounded-lg px-2 py-2.5 text-sm font-medium ${
-                effectiveScrolled
-                  ? "text-slate-700 hover:bg-neutral-50"
-                  : "text-white/90 hover:bg-white/10"
-              }`}
-              onClick={(e) => {
-                if (item.href.startsWith("/")) {
-                  e.preventDefault();
-                  navigate(item.href);
-                }
-                setMenuOpen(false);
-              }}
+              className={mobileNavLinkClass(item.href)}
+              onClick={(e) => handleNavClick(item.href, e)}
             >
               {item.label}
             </a>
           ))}
-          <button
-            type="button"
-            onClick={goToLogin}
-            className="mt-2 w-full rounded-lg bg-[#FF8022] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#e8721a]"
-          >
-            Sign In
-          </button>
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={signOut}
+              className="mt-2 w-full rounded-lg border border-red-200 px-4 py-3 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={goToLogin}
+              className="mt-2 w-full rounded-lg bg-[#FF8022] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#e8721a]"
+            >
+              Sign In
+            </button>
+          )}
         </nav>
       </div>
     </header>

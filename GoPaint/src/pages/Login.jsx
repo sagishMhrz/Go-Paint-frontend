@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { setLoggedIn } from "../components/Header";
 import loginImage from "../assets/login.png";
 
 function PersonIcon({ className }) {
@@ -98,6 +99,11 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = () => {
+    if (userType === "client") {
+      setLoggedIn("client");
+      navigate("/user-dashboard");
+      return;
+    }
     console.log({ userType, email, password, rememberMe });
   };
 

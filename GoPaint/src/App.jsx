@@ -7,6 +7,7 @@ import HowItWorks from "./pages/HowItWorks";
 import Login from "./pages/Login";
 import ClientSignUp from "./pages/ClientSignUp";
 import PainterSignUp from "./pages/PainterSignUp";
+import UserDashboard from "./pages/UserDashboard";
 
 import "./App.css";
 
@@ -16,6 +17,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<ClientSignUp />} />
       <Route path="/painter-signup" element={<PainterSignUp />} />
+      <Route path="/user-dashboard" element={<UserDashboard />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="colors" element={<Colors />} />
