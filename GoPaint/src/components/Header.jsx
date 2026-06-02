@@ -11,7 +11,7 @@ const PUBLIC_NAV_LINKS = [
 const AUTH_NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Dashboard", href: "/user-dashboard" },
-  { label: "Projects", href: "/#projects" },
+  { label: "Projects", href: "/user-projects" },
   { label: "Colors", href: "/colors" },
   { label: "Find Painters", href: "/find-painters" },
   { label: "Visualize", href: "/#visualize" },
