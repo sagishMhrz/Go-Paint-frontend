@@ -87,7 +87,7 @@ function MetaIcon({ children }) {
   );
 }
 
-function ProjectCard({ project, selected, onSelect }) {
+function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
   return (
     <button
       type="button"
@@ -250,7 +250,7 @@ function ProjectCard({ project, selected, onSelect }) {
   );
 }
 
-function ProjectDetail({ project, onClose }) {
+function ProjectDetail({ project, onClose, viewBidsPath }) {
   if (!project) {
     return (
       <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-neutral-100 bg-white p-8 text-center shadow-sm lg:min-h-[480px]">
@@ -357,12 +357,12 @@ function ProjectDetail({ project, onClose }) {
       )}
       {project.actions && (
         <div className="mt-6 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="flex-1 rounded-lg border border-[#FF8022] bg-white px-4 py-2.5 text-sm font-semibold text-[#FF8022] transition hover:bg-orange-50 sm:flex-none"
+          <Link
+            to={viewBidsPath}
+            className="flex-1 rounded-lg border border-[#FF8022] bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#FF8022] transition hover:bg-orange-50 sm:flex-none"
           >
             View Bids
-          </button>
+          </Link>
           <button
             type="button"
             className="flex-1 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-neutral-50 sm:flex-none"
@@ -407,13 +407,13 @@ export default function UserProject() {
                 Manage your painting projects and track progress
               </p>
             </div>
-            <button
-              type="button"
+            <Link
+              to="/new-project"
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#FF8022] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a] sm:w-auto"
             >
               <span className="text-lg leading-none">+</span>
               New Project
-            </button>
+            </Link>
           </div>
 
           <div className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
@@ -448,6 +448,7 @@ export default function UserProject() {
                     project={project}
                     selected={selected?.id === project.id}
                     onSelect={setSelected}
+                    viewBidsPath={`/view-bids/${project.id}`}
                   />
                 ))
               )}
@@ -455,7 +456,13 @@ export default function UserProject() {
 
             <aside className="hidden lg:col-span-2 lg:block">
               <div className="sticky top-24">
-                <ProjectDetail project={selected} onClose={() => setSelected(null)} />
+                <ProjectDetail
+                  project={selected}
+                  onClose={() => setSelected(null)}
+                  viewBidsPath={
+                    selected ? `/view-bids/${selected.id}` : "/view-bids/1"
+                  }
+                />
               </div>
             </aside>
           </div>
@@ -465,6 +472,9 @@ export default function UserProject() {
               <ProjectDetail
                 project={selected}
                 onClose={() => setSelected(null)}
+                viewBidsPath={
+                  selected ? `/view-bids/${selected.id}` : "/view-bids/1"
+                }
               />
             </div>
           )}

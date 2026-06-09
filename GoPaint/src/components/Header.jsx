@@ -51,6 +51,12 @@ export default function Header({
     navigate("/login");
   };
 
+  const goToProfile = () => {
+    setProfileOpen(false);
+    setMenuOpen(false);
+    navigate("/user-profile");
+  };
+
   const signOut = () => {
     clearLoggedIn();
     setAuthFromStorage(false);
@@ -245,6 +251,7 @@ export default function Header({
                 <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
                   <button
                     type="button"
+                    onClick={goToProfile}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
                   >
                     My Profile
@@ -335,13 +342,26 @@ export default function Header({
             </a>
           ))}
           {isLoggedIn ? (
-            <button
-              type="button"
-              onClick={signOut}
-              className="mt-2 w-full rounded-lg border border-red-200 px-4 py-3 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
-            >
-              Sign Out
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={goToProfile}
+                className={`mt-2 w-full rounded-lg px-4 py-3 text-center text-sm font-semibold transition ${
+                  effectiveScrolled
+                    ? "border border-neutral-200 text-slate-700 hover:bg-neutral-50"
+                    : "border border-white/25 text-white hover:bg-white/10"
+                }`}
+              >
+                My Profile
+              </button>
+              <button
+                type="button"
+                onClick={signOut}
+                className="mt-2 w-full rounded-lg border border-red-200 px-4 py-3 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                Sign Out
+              </button>
+            </>
           ) : (
             <button
               type="button"

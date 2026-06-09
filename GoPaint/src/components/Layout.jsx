@@ -10,7 +10,8 @@ const Layout = () => {
   const forceScrolledHeader =
     pathname === "/colors" ||
     pathname === "/find-painters" ||
-    pathname === "/how-it-works";
+    pathname === "/how-it-works" ||
+    pathname.startsWith("/hire-painter");
 
   useEffect(() => {
     setLoggedIn(isUserLoggedIn());

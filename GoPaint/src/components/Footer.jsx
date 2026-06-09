@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-const PLATFORM = [
+const DASHBOARD_PATHS = ["/user-dashboard", "/user-projects", "/new-project"];
+
+const PLATFORM_BASE = [
   { label: "Color Explorer", href: "/colors" },
   { label: "Room Visualizer", href: "#ai-design" },
   { label: "Find Painters", href: "/find-painters" },
-  { label: "Post a Project", href: "#cta" },
 ];
 
 const FOR_PAINTERS = [
@@ -23,6 +24,17 @@ const SUPPORT = [
 ];
 
 export default function Footer() {
+  const { pathname } = useLocation();
+  const isDashboardArea = DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
+
+  const platformLinks = [
+    ...PLATFORM_BASE,
+    {
+      label: "Post a Project",
+      href: isDashboardArea ? "/new-project" : "#cta",
+    },
+  ];
+
   return (
     <footer id="contact" className="scroll-mt-24 bg-[#121212] text-white">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
@@ -77,7 +89,7 @@ export default function Footer() {
               Platform
             </h3>
             <ul className="space-y-2.5">
-              {PLATFORM.map((l) => (
+              {platformLinks.map((l) => (
                 <li key={l.label}>
                   {l.href.startsWith("/") ? (
                     <Link

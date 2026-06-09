@@ -196,6 +196,7 @@ const QUICK_ACTIONS = [
     desc: "Get bids from painters",
     bg: "bg-[#FF8022] hover:bg-[#e8721a]",
     icon: "plus",
+    href: "/new-project",
   },
   {
     title: "AI Design",
@@ -414,13 +415,13 @@ export default function UserDashboard() {
                         </button>
                       ))}
                     </div>
-                    <button
-                      type="button"
+                    <Link
+                      to="/new-project"
                       className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF8022] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
                     >
                       <span className="text-lg leading-none">+</span>
                       New Project
-                    </button>
+                    </Link>
                   </div>
                 </div>
 

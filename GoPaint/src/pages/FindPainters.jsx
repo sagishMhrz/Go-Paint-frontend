@@ -405,12 +405,13 @@ export default function FindPainters() {
                   >
                     View Profile
                   </button>
-                  <button
-                    type="button"
+                  <Link
+                    to={`/hire-painter/${p.id}`}
+                    state={{ painter: p }}
                     className="rounded-xl bg-[#FF8022] py-3 text-center text-sm font-bold text-white transition hover:bg-[#e8721a]"
                   >
                     Hire Now
-                  </button>
+                  </Link>
                 </div>
               </article>
             ))}
