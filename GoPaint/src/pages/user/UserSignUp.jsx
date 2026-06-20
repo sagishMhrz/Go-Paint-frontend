@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import loginImage from "../assets/login.png";
+import loginImage from "../../assets/login.png";
+import axios from "axios";
 
 function PersonIcon({ className }) {
   return (
@@ -143,10 +144,10 @@ function ProgressBar({ step }) {
   );
 }
 
-export default function ClientSignUp() {
+export default function UserSignUp() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [userType, setUserType] = useState("owner");
+  const [userType, setUserType] = useState("user");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -155,23 +156,59 @@ export default function ClientSignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [location, setLocation] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [specialties, setSpecialties] = useState([]);
+  const [experience, setExperience] = useState("");
 
   const handleContinue = () => {
     setStep(2);
   };
 
-  const handleCreateAccount = () => {
-    console.log({
-      userType,
+  const handleCreateAccount = async () => {
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Service");
+      return;
+    }
+    console.log("Sending:", {
       fullName,
       email,
-      phone,
-      password,
-      location,
-      agreedToTerms,
+      role: userType === "user" ? "USER" : "PAINTER",
+      city: location,
+      specialties: userType === "painter" ? specialties : [],
+      experience: userType === "painter" ? experience : "",
     });
-  };
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/register",
+        {
+          fullName,
+          email,
+          password,
+          phone,
+          role: userType === "user" ? "USER" : "PAINTER",
+          city: location,
+          district: "",
+          addressLine: "",
+          specialties: userType === "painter" ? specialties : [],
+          experience: userType === "painter" ? experience : "",
+        },
+      );
 
+      setSuccess(response.data.message);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err) {
+      setError(err.response?.data?.error || "Registration failed");
+    }
+  };
   const roleBtnClass = (active) =>
     `flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold transition-all ${
       active
@@ -195,8 +232,8 @@ export default function ClientSignUp() {
               Join GoPaint Today
             </h2>
             <p className="mt-2 max-w-[240px] text-xs font-normal leading-relaxed text-white/85">
-              Nepal&apos;s smartest platform connecting property owners with
-              professional painters
+              Nepal&apos;s smartest platform connecting users with professional
+              painters
             </p>
           </div>
         </div>
@@ -215,7 +252,7 @@ export default function ClientSignUp() {
           <div className="flex-shrink-0">
             <div className="mb-3">
               <h1 className="text-xl font-bold tracking-tight text-[#1B2559]">
-              Create Account
+                Create Account
               </h1>
               <p className="mt-0.5 text-xs text-gray-400">
                 Join Nepal&apos;s smartest paint platform
@@ -233,21 +270,21 @@ export default function ClientSignUp() {
                   <div className="mb-3 flex rounded-full bg-gray-100 p-1">
                     <button
                       type="button"
-                      onClick={() => setUserType("owner")}
-                      className={roleBtnClass(userType === "owner")}
+                      onClick={() => setUserType("user")}
+                      className={roleBtnClass(userType === "user")}
                     >
                       <PersonIcon
                         className={
-                          userType === "owner"
+                          userType === "user"
                             ? "text-[#E07B39]"
                             : "text-gray-400"
                         }
                       />
-                      Property Owner
+                      User
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigate("/painter-signup")}
+                      onClick={() => setUserType("painter")} // just toggle, don't navigate
                       className={roleBtnClass(userType === "painter")}
                     >
                       <PaintRollerIcon
@@ -257,7 +294,7 @@ export default function ClientSignUp() {
                             : "text-gray-400"
                         }
                       />
-                      Professional Painter
+                      Painter
                     </button>
                   </div>
 
@@ -353,9 +390,7 @@ export default function ClientSignUp() {
                         type={showPassword ? "text" : "password"}
                         placeholder="Confirm password"
                         value={confirmPassword}
-                        onChange={(e) =>
-                          setConfirmPassword(e.target.value)
-                        }
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         className={inputClass}
                       />
                     </div>
@@ -379,6 +414,70 @@ export default function ClientSignUp() {
                       className={inputClass}
                     />
                   </div>
+
+                  {/* Painter-only fields */}
+                  {userType === "painter" && (
+                    <>
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                          Specialties
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Interior",
+                            "Exterior",
+                            "Decorative",
+                            "Texture",
+                            "Waterproofing",
+                            "Industrial",
+                            "Luxury Finish",
+                            "Faux",
+                          ].map((spec) => (
+                            <button
+                              key={spec}
+                              type="button"
+                              onClick={() =>
+                                setSpecialties((prev) =>
+                                  prev.includes(spec)
+                                    ? prev.filter((s) => s !== spec)
+                                    : [...prev, spec],
+                                )
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                                specialties.includes(spec)
+                                  ? "border-[#E07B39] bg-[#FFF4EC] text-[#E07B39]"
+                                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                              }`}
+                            >
+                              {spec}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <label
+                          htmlFor="signup-experience"
+                          className="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                          Years of Experience
+                        </label>
+                        <select
+                          id="signup-experience"
+                          value={experience}
+                          onChange={(e) => setExperience(e.target.value)}
+                          className={inputClass}
+                        >
+                          <option value="">Select experience</option>
+                          <option value="0-1">Less than 1 year</option>
+                          <option value="1-3">1 - 3 years</option>
+                          <option value="3-5">3 - 5 years</option>
+                          <option value="5-10">5 - 10 years</option>
+                          <option value="10+">10+ years</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
 
                   <label className="mb-4 flex cursor-pointer items-start gap-2.5">
                     <input
@@ -407,7 +506,10 @@ export default function ClientSignUp() {
                 </>
               )}
             </div>
-
+            {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
+            {success && (
+              <p className="mb-2 text-xs text-green-600">{success}</p>
+            )}
             {/* Footer: keep buttons + sign-in link always visible */}
             <div className="mt-auto flex flex-col gap-2">
               {step === 1 ? (

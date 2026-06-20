@@ -1,18 +1,20 @@
 import { Routes, Route } from "react-router-dom";
-import Layout from "./components/Layout";
-import Home from "./pages/Home";
-import Colors from "./pages/Colors";
-import FindPainters from "./pages/FindPainters";
-import HirePainter from "./pages/HirePainter";
-import HowItWorks from "./pages/HowItWorks";
-import Login from "./pages/Login";
-import PainterSignUp from "./pages/PainterSignUp";
-import UserDashboard from "./pages/UserDashboard";
-import UserProject from "./pages/UserProject";
-import NewProject from "./pages/NewProject";
-import ViewBids from "./pages/ViewBids";
-import UserSignUp from "./pages/UserSignUp";
-import UserProfile from "./pages/UserProfile";
+import Layout from "./components/user/Layout";
+import Home from "./pages/user/Home";
+import Colors from "./pages/user/Colors";
+import FindPainters from "./pages/user/FindPainters";
+import HirePainter from "./pages/user/HirePainter";
+import HowItWorks from "./pages/user/HowItWorks";
+import Login from "./pages/user/Login";
+import PainterSignUp from "./pages/painter/PainterSignUp";
+import UserDashboard from "./pages/user/UserDashboard";
+import UserProject from "./pages/user/UserProject";
+import NewProject from "./pages/user/NewProject";
+import ViewBids from "./pages/user/ViewBids";
+import UserSignUp from "./pages/user/UserSignUp";
+import UserProfile from "./pages/user/UserProfile";
+import PainterLayout from "./components/painter/Layout";
+import PainterDashboard from "./pages/painter/PainterDashboard";
 import "./App.css";
 
 function App() {
@@ -26,6 +28,9 @@ function App() {
       <Route path="/user-projects" element={<UserProject />} />
       <Route path="/new-project" element={<NewProject />} />
       <Route path="/view-bids/:projectId" element={<ViewBids />} />
+      <Route path="/painter-dashboard" element={<PainterLayout />}>
+        <Route index element={<PainterDashboard />} />
+      </Route>
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="colors" element={<Colors />} />

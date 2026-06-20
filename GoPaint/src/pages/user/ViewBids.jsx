@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import Header from "../../components/user/Header";
+import Footer from "../../components/user/Footer";
 
 const PROJECTS = {
   1: {
@@ -332,7 +332,7 @@ export default function ViewBids() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
-      <Header forceScrolled isLoggedIn />
+      <Header forceScrolled />
 
       <main className="flex-1 pt-20">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

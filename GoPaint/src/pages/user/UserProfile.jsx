@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Header, { clearLoggedIn } from "../components/Header";
-import Footer from "../components/Footer";
+import Header, { clearLoggedIn } from "../../components/user/Header";
+import Footer from "../../components/user/Footer";
 
 const PROFILE_STORAGE_KEY = "gopaint_user_profile";
 
@@ -447,7 +447,7 @@ export default function UserProfile() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F8F9FA]">
-      <Header forceScrolled isLoggedIn />
+      <Header forceScrolled />
 
       <main className="flex-1 pt-20">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

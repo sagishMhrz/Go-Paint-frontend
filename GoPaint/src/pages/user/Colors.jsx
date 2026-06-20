@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { isUserLoggedIn } from "../components/Header";
+import { isUserLoggedIn, AUTH_CHANGE_EVENT } from "../../components/user/Header";
 
 const TONE_TABS_PUBLIC = ["All Colors", "Warm", "Cool", "Pastel", "Neutral"];
 const TONE_TABS_AUTH = ["All", "Warm", "Cool", "Pastel", "Neutral"];
@@ -710,10 +710,13 @@ function LoggedInColorsView() {
 
 export default function Colors() {
   const { pathname } = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(isUserLoggedIn);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isUserLoggedIn());
 
   useEffect(() => {
-    setIsLoggedIn(isUserLoggedIn());
+    const syncAuth = () => setIsLoggedIn(isUserLoggedIn());
+    syncAuth();
+    window.addEventListener(AUTH_CHANGE_EVENT, syncAuth);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, syncAuth);
   }, [pathname]);
 
   return isLoggedIn ? <LoggedInColorsView /> : <PublicColorsView />;

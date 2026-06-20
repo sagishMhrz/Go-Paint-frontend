@@ -1,25 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import loginImage from "../assets/login.png";
-
-const SPECIALTIES = [
-  "Interior",
-  "Exterior",
-  "Decorative",
-  "Texture",
-  "Waterproofing",
-  "Industrial",
-  "Luxury Finish",
-  "Faux",
-];
-
-const EXPERIENCE_OPTIONS = [
-  "Less than 1 year",
-  "1–3 years",
-  "3–5 years",
-  "5–10 years",
-  "10+ years",
-];
+import loginImage from "../../assets/login.png";
+import axios from "axios";
 
 function PersonIcon({ className }) {
   return (
@@ -139,23 +121,24 @@ function ArrowLeftIcon() {
   );
 }
 
-function ChevronDownIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
+const SPECIALTY_OPTIONS = [
+  "Interior",
+  "Exterior",
+  "Decorative",
+  "Texture",
+  "Waterproofing",
+  "Industrial",
+  "Luxury Finish",
+  "Faux",
+];
+
+const EXPERIENCE_OPTIONS = [
+  "Less than 1 year",
+  "1-3 years",
+  "3-5 years",
+  "5-10 years",
+  "10+ years",
+];
 
 const inputClass =
   "w-full rounded-lg border border-gray-200 bg-[#F8FAFC] px-3 py-2 text-sm text-slate-800 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-300 focus:bg-white";
@@ -183,6 +166,7 @@ function ProgressBar({ step }) {
 export default function PainterSignUp() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [userType, setUserType] = useState("painter");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -190,9 +174,53 @@ export default function PainterSignUp() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [location, setLocation] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [specialties, setSpecialties] = useState([]);
   const [experience, setExperience] = useState("");
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleContinue = () => {
+    setStep(2);
+  };
+
+  const handleCreateAccount = async () => {
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Service");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/register",
+        {
+          fullName,
+          email,
+          password,
+          phone,
+          role: "PAINTER",
+          city: location,
+          district: "",
+          addressLine: "",
+          specialties,
+          experience,
+        },
+      );
+
+      setSuccess(response.data.message);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err) {
+      setError(err.response?.data?.error || "Registration failed");
+    }
+  };
 
   const roleBtnClass = (active) =>
     `flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold transition-all ${
@@ -201,28 +229,10 @@ export default function PainterSignUp() {
         : "border border-transparent bg-transparent text-gray-500"
     }`;
 
-  const toggleSpecialty = (name) => {
-    setSpecialties((prev) =>
-      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name],
-    );
-  };
-
-  const handleCreateAccount = () => {
-    console.log({
-      fullName,
-      email,
-      phone,
-      password,
-      location,
-      specialties,
-      experience,
-      agreedToTerms,
-    });
-  };
-
   return (
     <div className="flex h-screen overflow-hidden items-center justify-center bg-[#F3F4F6] p-4 font-heading">
       <div className="grid h-[calc(100vh-2rem)] w-full max-w-[720px] overflow-hidden rounded-2xl bg-white shadow-xl sm:grid-cols-2">
+        {/* Left image panel */}
         <div className="relative hidden h-full sm:block">
           <img
             src={loginImage}
@@ -235,12 +245,13 @@ export default function PainterSignUp() {
               Join GoPaint Today
             </h2>
             <p className="mt-2 max-w-[240px] text-xs font-normal leading-relaxed text-white/85">
-              Nepal&apos;s smartest platform connecting property owners with
-              professional painters
+              Nepal&apos;s smartest platform connecting users with professional
+              painters
             </p>
           </div>
         </div>
 
+        {/* Right form panel */}
         <div className="relative flex h-full min-h-0 flex-col px-6 py-4">
           <button
             type="button"
@@ -268,30 +279,47 @@ export default function PainterSignUp() {
             <div className="min-h-0 flex-1">
               {step === 1 ? (
                 <>
+                  {/* Role toggle */}
                   <div className="mb-3 flex rounded-full bg-gray-100 p-1">
                     <button
                       type="button"
                       onClick={() => navigate("/signup")}
-                      className={roleBtnClass(false)}
+                      className={roleBtnClass(userType === "user")}
                     >
-                      <PersonIcon className="text-gray-400" />
-                      Property Owner
+                      <PersonIcon
+                        className={
+                          userType === "user"
+                            ? "text-[#E07B39]"
+                            : "text-gray-400"
+                        }
+                      />
+                      User
                     </button>
-                    <button type="button" className={roleBtnClass(true)}>
-                      <PaintRollerIcon className="text-[#E07B39]" />
+                    <button
+                      type="button"
+                      onClick={() => setUserType("painter")}
+                      className={roleBtnClass(userType === "painter")}
+                    >
+                      <PaintRollerIcon
+                        className={
+                          userType === "painter"
+                            ? "text-[#E07B39]"
+                            : "text-gray-400"
+                        }
+                      />
                       Professional Painter
                     </button>
                   </div>
 
                   <div className="mb-3">
                     <label
-                      htmlFor="painter-name"
+                      htmlFor="painter-signup-name"
                       className="mb-1 block text-xs font-medium text-gray-600"
                     >
                       Full Name
                     </label>
                     <input
-                      id="painter-name"
+                      id="painter-signup-name"
                       type="text"
                       placeholder="Your full name"
                       value={fullName}
@@ -302,13 +330,13 @@ export default function PainterSignUp() {
 
                   <div className="mb-3">
                     <label
-                      htmlFor="painter-email"
+                      htmlFor="painter-signup-email"
                       className="mb-1 block text-xs font-medium text-gray-600"
                     >
                       Email
                     </label>
                     <input
-                      id="painter-email"
+                      id="painter-signup-email"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
@@ -319,13 +347,13 @@ export default function PainterSignUp() {
 
                   <div className="mb-3">
                     <label
-                      htmlFor="painter-phone"
+                      htmlFor="painter-signup-phone"
                       className="mb-1 block text-xs font-medium text-gray-600"
                     >
                       Phone Number
                     </label>
                     <input
-                      id="painter-phone"
+                      id="painter-signup-phone"
                       type="tel"
                       placeholder="+977 98XXXXXXXX"
                       value={phone}
@@ -337,14 +365,14 @@ export default function PainterSignUp() {
                   <div className="mb-3 grid grid-cols-2 gap-2">
                     <div>
                       <label
-                        htmlFor="painter-password"
+                        htmlFor="painter-signup-password"
                         className="mb-1 block text-xs font-medium text-gray-600"
                       >
                         Password
                       </label>
                       <div className="relative">
                         <input
-                          id="painter-password"
+                          id="painter-signup-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Create password"
                           value={password}
@@ -365,13 +393,13 @@ export default function PainterSignUp() {
                     </div>
                     <div>
                       <label
-                        htmlFor="painter-confirm"
+                        htmlFor="painter-signup-confirm"
                         className="mb-1 block text-xs font-medium text-gray-600"
                       >
                         Confirm Password
                       </label>
                       <input
-                        id="painter-confirm"
+                        id="painter-signup-confirm"
                         type={showPassword ? "text" : "password"}
                         placeholder="Confirm password"
                         value={confirmPassword}
@@ -385,13 +413,13 @@ export default function PainterSignUp() {
                 <>
                   <div className="mb-3">
                     <label
-                      htmlFor="painter-location"
+                      htmlFor="painter-signup-location"
                       className="mb-1 block text-xs font-medium text-gray-600"
                     >
                       Your Location
                     </label>
                     <input
-                      id="painter-location"
+                      id="painter-signup-location"
                       type="text"
                       placeholder="e.g. Kathmandu, Lalitpur"
                       value={location}
@@ -401,63 +429,53 @@ export default function PainterSignUp() {
                   </div>
 
                   <div className="mb-3">
-                    <span className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
                       Specialties
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {SPECIALTIES.map((name) => {
-                        const selected = specialties.includes(name);
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            onClick={() => toggleSpecialty(name)}
-                            className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                              selected
-                                ? "border-[#E07B39] bg-orange-50 text-[#E07B39]"
-                                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            {name}
-                          </button>
-                        );
-                      })}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {SPECIALTY_OPTIONS.map((spec) => (
+                        <button
+                          key={spec}
+                          type="button"
+                          onClick={() =>
+                            setSpecialties((prev) =>
+                              prev.includes(spec)
+                                ? prev.filter((s) => s !== spec)
+                                : [...prev, spec],
+                            )
+                          }
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                            specialties.includes(spec)
+                              ? "border-[#E07B39] bg-[#FFF4EC] text-[#E07B39]"
+                              : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                          }`}
+                        >
+                          {spec}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
                   <div className="mb-3">
                     <label
-                      htmlFor="painter-experience"
+                      htmlFor="painter-signup-experience"
                       className="mb-1 block text-xs font-medium text-gray-600"
                     >
                       Years of Experience
                     </label>
-                    <div className="relative">
-                      <select
-                        id="painter-experience"
-                        value={experience}
-                        onChange={(e) => setExperience(e.target.value)}
-                        className={`${inputClass} appearance-none pr-10 ${
-                          !experience ? "text-gray-400" : ""
-                        }`}
-                      >
-                        <option value="" disabled>
-                          Select experience
+                    <select
+                      id="painter-signup-experience"
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Select experience</option>
+                      {EXPERIENCE_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
                         </option>
-                        {EXPERIENCE_OPTIONS.map((opt) => (
-                          <option
-                            key={opt}
-                            value={opt}
-                            className="text-slate-800"
-                          >
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                        <ChevronDownIcon />
-                      </span>
-                    </div>
+                      ))}
+                    </select>
                   </div>
 
                   <label className="mb-4 flex cursor-pointer items-start gap-2.5">
@@ -487,13 +505,16 @@ export default function PainterSignUp() {
                 </>
               )}
             </div>
-
+            {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
+            {success && (
+              <p className="mb-2 text-xs text-green-600">{success}</p>
+            )}
             {/* Footer: keep buttons + sign-in link always visible */}
             <div className="mt-auto flex flex-col gap-2">
               {step === 1 ? (
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={handleContinue}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3B82F6] py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#2563EB]"
                 >
                   Continue

@@ -1,87 +1,65 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const PUBLIC_NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Colors", href: "/colors" },
-  { label: "Find Painters", href: "/find-painters" },
-  { label: "How It Works", href: "/how-it-works" },
-];
-
-const AUTH_NAV_LINKS = [
-  // { label: "Home", href: "/" },
-  { label: "Dashboard", href: "/user-dashboard" },
-  { label: "Projects", href: "/user-projects" },
-  { label: "Colors", href: "/colors" },
-  { label: "Find Painters", href: "/find-painters" },
-  { label: "Visualize", href: "/#visualize" },
+const PAINTER_NAV_LINKS = [
+  { label: "Dashboard", href: "/painter-dashboard" },
+  { label: "Browse Projects", href: "/painter-dashboard#available-projects" },
+  { label: "My Bids", href: "/painter-dashboard#my-bids" },
+  { label: "Profile", href: "/painter-dashboard#profile" },
 ];
 
 const AUTH_STORAGE_KEY = "gopaint_auth";
-export const AUTH_CHANGE_EVENT = "gopaint-auth-change";
+export const PAINTER_AUTH_CHANGE_EVENT = "gopaint-painter-auth-change";
 
 function syncAuthState() {
-  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  window.dispatchEvent(new Event(PAINTER_AUTH_CHANGE_EVENT));
 }
 
-export function setLoggedIn(role = "user") {
-  localStorage.setItem(AUTH_STORAGE_KEY, role);
+export function setPainterLoggedIn() {
+  localStorage.setItem(AUTH_STORAGE_KEY, "painter");
   syncAuthState();
 }
 
-export function clearLoggedIn() {
+export function clearPainterLoggedIn() {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem("userId");
+  localStorage.removeItem("role");
+  localStorage.removeItem("fullName");
   syncAuthState();
 }
 
-export function isUserLoggedIn() {
-  return localStorage.getItem(AUTH_STORAGE_KEY) === "user";
+export function isPainterLoggedIn() {
+  return (
+    localStorage.getItem(AUTH_STORAGE_KEY) === "painter" ||
+    localStorage.getItem("role") === "PAINTER"
+  );
 }
 
-export default function Header({ forceScrolled = false } = {}) {
+function getInitials(name) {
+  if (!name) return "P";
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export default function Header() {
   const navigate = useNavigate();
   const { pathname, hash } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => isUserLoggedIn());
-
-  const navLinks = isLoggedIn ? AUTH_NAV_LINKS : PUBLIC_NAV_LINKS;
-
-  const goToLogin = () => {
-    setMenuOpen(false);
-    navigate("/login");
-  };
-
-  const goToProfile = () => {
-    setProfileOpen(false);
-    setMenuOpen(false);
-    navigate("/user-profile");
-  };
-
-  const signOut = () => {
-    clearLoggedIn();
-    setIsLoggedIn(false);
-    setProfileOpen(false);
-    setMenuOpen(false);
-    navigate("/login");
-  };
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isPainterLoggedIn());
+  const fullName = localStorage.getItem("fullName") || "Painter";
+  const initials = getInitials(fullName);
 
   useEffect(() => {
-    const syncAuth = () => setIsLoggedIn(isUserLoggedIn());
+    const syncAuth = () => setIsLoggedIn(isPainterLoggedIn());
     syncAuth();
-    window.addEventListener(AUTH_CHANGE_EVENT, syncAuth);
-    return () => window.removeEventListener(AUTH_CHANGE_EVENT, syncAuth);
+    window.addEventListener(PAINTER_AUTH_CHANGE_EVENT, syncAuth);
+    return () => window.removeEventListener(PAINTER_AUTH_CHANGE_EVENT, syncAuth);
   }, [pathname]);
-
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -104,88 +82,67 @@ export default function Header({ forceScrolled = false } = {}) {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen, profileOpen]);
 
-  const effectiveScrolled = forceScrolled || scrolled || isLoggedIn;
-
   const isActiveLink = (href) => {
-    if (href.includes("#")) {
-      const [path, linkHash] = href.split("#");
+    const [path, linkHash] = href.split("#");
+    if (linkHash) {
       return pathname === path && hash === `#${linkHash}`;
     }
     return pathname === href;
   };
 
   const navLinkClass = (href) => {
-    const active = isLoggedIn && isActiveLink(href);
+    const active = isActiveLink(href);
     if (active) {
       return "relative text-sm font-medium text-[#FF8022] after:absolute after:-bottom-3 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-[#FF8022]";
     }
-    return effectiveScrolled
-      ? "text-sm font-medium text-slate-600 transition hover:text-slate-900"
-      : "text-sm font-medium text-white/90 transition hover:text-white";
+    return "text-sm font-medium text-slate-600 transition hover:text-slate-900";
   };
 
   const mobileNavLinkClass = (href) => {
-    const active = isLoggedIn && isActiveLink(href);
+    const active = isActiveLink(href);
     if (active) {
       return "rounded-lg bg-orange-50 px-2 py-2.5 text-sm font-medium text-[#FF8022]";
     }
-    return `rounded-lg px-2 py-2.5 text-sm font-medium ${
-      effectiveScrolled
-        ? "text-slate-700 hover:bg-neutral-50"
-        : "text-white/90 hover:bg-white/10"
-    }`;
+    return "rounded-lg px-2 py-2.5 text-sm font-medium text-slate-700 hover:bg-neutral-50";
   };
 
-  const menuBtnClass = effectiveScrolled
-    ? "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-200 text-slate-700 md:hidden"
-    : "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/25 text-white md:hidden";
-
   const handleNavClick = (href, e) => {
-    if (href.startsWith("/")) {
-      e.preventDefault();
-      const [path, linkHash] = href.split("#");
-      navigate(linkHash ? `${path}#${linkHash}` : path);
-    }
+    e.preventDefault();
+    const [path, linkHash] = href.split("#");
+    navigate(linkHash ? `${path}#${linkHash}` : path);
     setMenuOpen(false);
   };
 
-  const logoHref = isLoggedIn ? "/user-dashboard" : "/";
+  const signOut = () => {
+    clearPainterLoggedIn();
+    setIsLoggedIn(false);
+    setProfileOpen(false);
+    setMenuOpen(false);
+    navigate("/login");
+  };
 
   return (
-    <header
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        effectiveScrolled
-          ? "border-b border-neutral-200 bg-white shadow-sm"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-neutral-200 bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
         <a
-          href={logoHref}
-          aria-label="GoPaint home"
+          href="/painter-dashboard"
+          aria-label="GoPaint painter dashboard"
           className="shrink-0 outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF8022]"
           onClick={(e) => {
             e.preventDefault();
-            navigate(logoHref);
+            navigate("/painter-dashboard");
           }}
         >
-          <span className="font-heading text-2xl font-bold tracking-tight">
-            <span
-              className={`transition-colors duration-300 ${
-                effectiveScrolled ? "text-slate-900" : "text-white"
-              }`}
-            >
-              Go
-            </span>
-            <span className="text-[#FF8022]">Paint</span>
+          <span className="font-heading text-2xl font-bold tracking-tight text-slate-900">
+            Go<span className="text-[#FF8022]">Paint</span>
           </span>
         </a>
 
         <nav
           className="hidden items-center gap-6 lg:gap-8 md:flex"
-          aria-label="Primary navigation"
+          aria-label="Painter navigation"
         >
-          {navLinks.map((item) => (
+          {PAINTER_NAV_LINKS.map((item) => (
             <a
               key={item.label}
               href={item.href}
@@ -233,7 +190,7 @@ export default function Header({ forceScrolled = false } = {}) {
                 aria-haspopup="true"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-[#FF8022] text-xs font-bold text-white">
-                  AK
+                  {initials}
                 </span>
                 <svg
                   width="14"
@@ -256,7 +213,10 @@ export default function Header({ forceScrolled = false } = {}) {
                 <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
                   <button
                     type="button"
-                    onClick={goToProfile}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate("/painter-dashboard#profile");
+                    }}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
                   >
                     My Profile
@@ -283,7 +243,7 @@ export default function Header({ forceScrolled = false } = {}) {
           <div className="hidden md:block">
             <button
               type="button"
-              onClick={goToLogin}
+              onClick={() => navigate("/login")}
               className="rounded-lg bg-[#FF8022] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
             >
               Sign In
@@ -293,9 +253,9 @@ export default function Header({ forceScrolled = false } = {}) {
 
         <button
           type="button"
-          className={menuBtnClass}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-200 text-slate-700 md:hidden"
           aria-expanded={menuOpen}
-          aria-controls="mobile-nav"
+          aria-controls="painter-mobile-nav"
           onClick={() => setMenuOpen((o) => !o)}
         >
           <span className="sr-only">Toggle menu</span>
@@ -328,15 +288,13 @@ export default function Header({ forceScrolled = false } = {}) {
       </div>
 
       <div
-        id="mobile-nav"
-        className={`border-t px-4 py-4 md:hidden ${
-          effectiveScrolled
-            ? "border-neutral-200 bg-white"
-            : "border-white/15 bg-black/50 backdrop-blur-md"
-        } ${menuOpen ? "block" : "hidden"}`}
+        id="painter-mobile-nav"
+        className={`border-t border-neutral-200 bg-white px-4 py-4 md:hidden ${
+          menuOpen ? "block" : "hidden"
+        }`}
       >
-        <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-          {navLinks.map((item) => (
+        <nav className="flex flex-col gap-1" aria-label="Mobile painter navigation">
+          {PAINTER_NAV_LINKS.map((item) => (
             <a
               key={item.label}
               href={item.href}
@@ -347,30 +305,17 @@ export default function Header({ forceScrolled = false } = {}) {
             </a>
           ))}
           {isLoggedIn ? (
-            <>
-              <button
-                type="button"
-                onClick={goToProfile}
-                className={`mt-2 w-full rounded-lg px-4 py-3 text-center text-sm font-semibold transition ${
-                  effectiveScrolled
-                    ? "border border-neutral-200 text-slate-700 hover:bg-neutral-50"
-                    : "border border-white/25 text-white hover:bg-white/10"
-                }`}
-              >
-                My Profile
-              </button>
-              <button
-                type="button"
-                onClick={signOut}
-                className="mt-2 w-full rounded-lg border border-red-200 px-4 py-3 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
-              >
-                Sign Out
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={signOut}
+              className="mt-2 w-full rounded-lg border border-red-200 px-4 py-3 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
+            >
+              Sign Out
+            </button>
           ) : (
             <button
               type="button"
-              onClick={goToLogin}
+              onClick={() => navigate("/login")}
               className="mt-2 w-full rounded-lg bg-[#FF8022] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#e8721a]"
             >
               Sign In

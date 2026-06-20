@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { setLoggedIn } from "../components/Header";
-import loginImage from "../assets/login.png";
+import { setLoggedIn } from "../../components/user/Header";
+import loginImage from "../../assets/login.png";
+import axios from "axios";
 
 function PersonIcon({ className }) {
   return (
@@ -92,21 +93,41 @@ const inputClass =
 
 export default function Login() {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState("client");
+  const [userType, setUserType] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    if (userType === "client") {
-      setLoggedIn("client");
-      navigate("/user-dashboard");
-      return;
+  const handleLogin = async () => {
+    setError("");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/login",
+        {
+          email,
+          password,
+        },
+      );
+
+      const { role, userId, fullName } = response.data;
+
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("role", role);
+      localStorage.setItem("fullName", fullName);
+
+      if (role === "USER") {
+        setLoggedIn("user");
+        navigate("/user-dashboard");
+      } else if (role === "PAINTER") {
+        navigate("/painter-dashboard");
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || "Login failed");
     }
-    console.log({ userType, email, password, rememberMe });
   };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] p-8 font-heading">
       <div className="grid w-full max-w-[720px] overflow-hidden rounded-2xl bg-white shadow-xl sm:grid-cols-2">
@@ -151,19 +172,19 @@ export default function Login() {
           <div className="mb-5 flex rounded-full bg-gray-100 p-1">
             <button
               type="button"
-              onClick={() => setUserType("client")}
+              onClick={() => setUserType("user")}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold transition-all ${
-                userType === "client"
+                userType === "user"
                   ? "bg-white text-[#E07B39] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                   : "bg-transparent text-gray-500"
               }`}
             >
               <PersonIcon
                 className={
-                  userType === "client" ? "text-[#E07B39]" : "text-gray-400"
+                  userType === "user" ? "text-[#E07B39]" : "text-gray-400"
                 }
               />
-              Client
+              User
             </button>
             <button
               type="button"
@@ -247,7 +268,7 @@ export default function Login() {
               Forgot password?
             </button>
           </div>
-
+          {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
           {/* Login button */}
           <button
             type="button"

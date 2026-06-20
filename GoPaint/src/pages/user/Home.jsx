@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import HomeImage from "../assets/Home.png";
+import HomeImage from "../../assets/Home.png";
 
 const TONE_TABS = ["All", "Warm", "Cool", "Pastel", "Neutral"];
 

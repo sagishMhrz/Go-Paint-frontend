@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import Header from "../../components/user/Header";
+import Footer from "../../components/user/Footer";
 
 const STATS = [
   {
@@ -345,7 +345,7 @@ export default function UserDashboard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F3F4F6]">
-      <Header forceScrolled isLoggedIn />
+      <Header forceScrolled />
 
       <main className="flex-1 pt-20">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
