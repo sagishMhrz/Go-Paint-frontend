@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 
 const PAINTER_NAV_LINKS = [
   { label: "Dashboard", href: "/painter-dashboard" },
-  { label: "Browse Projects", href: "/painter-dashboard#available-projects" },
-  { label: "My Bids", href: "/painter-dashboard#my-bids" },
-  { label: "Profile", href: "/painter-dashboard#profile" },
+  { label: "Browse Projects", href: "/browse-projects" },
+  { label: "My Bids", href: "/my-bids" },
+  { label: "Profile", href: "/painter-profile" },
 ];
 
 const AUTH_STORAGE_KEY = "gopaint_auth";
@@ -106,10 +106,7 @@ export default function Header() {
     return "rounded-lg px-2 py-2.5 text-sm font-medium text-slate-700 hover:bg-neutral-50";
   };
 
-  const handleNavClick = (href, e) => {
-    e.preventDefault();
-    const [path, linkHash] = href.split("#");
-    navigate(linkHash ? `${path}#${linkHash}` : path);
+  const handleNavClick = () => {
     setMenuOpen(false);
   };
 
@@ -124,33 +121,28 @@ export default function Header() {
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-neutral-200 bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
-        <a
-          href="/painter-dashboard"
+        <Link
+          to="/painter-dashboard"
           aria-label="GoPaint painter dashboard"
           className="shrink-0 outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF8022]"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate("/painter-dashboard");
-          }}
         >
           <span className="font-heading text-2xl font-bold tracking-tight text-slate-900">
             Go<span className="text-[#FF8022]">Paint</span>
           </span>
-        </a>
+        </Link>
 
         <nav
           className="hidden items-center gap-6 lg:gap-8 md:flex"
           aria-label="Painter navigation"
         >
           {PAINTER_NAV_LINKS.map((item) => (
-            <a
+            <Link
               key={item.label}
-              href={item.href}
+              to={item.href}
               className={navLinkClass(item.href)}
-              onClick={(e) => handleNavClick(item.href, e)}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -211,16 +203,13 @@ export default function Header() {
               </button>
               {profileOpen && (
                 <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate("/painter-dashboard#profile");
-                    }}
+                  <Link
+                    to="/painter-profile"
+                    onClick={() => setProfileOpen(false)}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
                   >
                     My Profile
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-neutral-50"
@@ -295,14 +284,14 @@ export default function Header() {
       >
         <nav className="flex flex-col gap-1" aria-label="Mobile painter navigation">
           {PAINTER_NAV_LINKS.map((item) => (
-            <a
+            <Link
               key={item.label}
-              href={item.href}
+              to={item.href}
               className={mobileNavLinkClass(item.href)}
-              onClick={(e) => handleNavClick(item.href, e)}
+              onClick={handleNavClick}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
           {isLoggedIn ? (
             <button

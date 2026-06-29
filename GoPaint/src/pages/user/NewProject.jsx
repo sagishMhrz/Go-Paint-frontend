@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../../components/user/Header";
 import Footer from "../../components/user/Footer";
+import axios from "axios";
 
 const ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Exterior"];
 
@@ -26,6 +27,7 @@ export default function NewProject() {
   const [timeline, setTimeline] = useState("Within 1 week");
   const [rooms, setRooms] = useState([]);
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
 
   const toggleRoom = (room) => {
     setRooms((prev) =>
@@ -33,9 +35,28 @@ export default function NewProject() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/user-projects");
+    setError("");
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        navigate("/login");
+        return;
+      }
+      await axios.post("http://localhost:8080/api/projects", {
+        title,
+        location,
+        budget,
+        timeline,
+        rooms,
+        description,
+        userId: Number(userId),
+      });
+      navigate("/user-dashboard");
+    } catch (err) {
+      setError(err.response?.data || "Failed to create project");
+    }
   };
 
   return (

@@ -1,20 +1,21 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../../components/user/Header";
 import Footer from "../../components/user/Footer";
+import axios from "axios";
 
 const STATS = [
   {
     label: "Active Projects",
-    value: "2",
-    sub: "+1 this week",
+    value: "0",
+    sub: "+0 this week",
     iconBg: "bg-orange-100",
     iconColor: "text-[#FF8022]",
     icon: "folder",
   },
   {
     label: "Completed Projects",
-    value: "3",
+    value: "0",
     sub: "All time",
     iconBg: "bg-emerald-100",
     iconColor: "text-emerald-600",
@@ -22,7 +23,7 @@ const STATS = [
   },
   {
     label: "Total Spent",
-    value: "NPR 285K",
+    value: "NPR 0",
     sub: "Across all projects",
     iconBg: "bg-amber-100",
     iconColor: "text-amber-600",
@@ -55,46 +56,6 @@ const STATS = [
 ];
 
 const PROJECT_FILTERS = ["All", "Bidding", "In Progress", "Completed"];
-
-const PROJECTS = [
-  {
-    id: 1,
-    title: "Living Room & Master Bedroom Repaint",
-    status: "Bidding",
-    statusClass: "bg-orange-50 text-[#FF8022] border-orange-200",
-    location: "Lalitpur, Kathmandu Valley",
-    budget: "NPR 25,000 – 40,000",
-    bids: 6,
-    filter: "Bidding",
-  },
-  {
-    id: 2,
-    title: "Full Apartment Interior – 2BHK",
-    status: "In Progress",
-    statusClass: "bg-orange-50 text-[#FF8022] border-orange-200",
-    location: "Baneshwor, Kathmandu",
-    painter: "Rajesh Shrestha",
-    progress: 60,
-    filter: "In Progress",
-  },
-  {
-    id: 3,
-    title: "Exterior Repaint – 2 Storey House",
-    status: "Completed",
-    statusClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    location: "Bhaktapur",
-    painter: "Bikash Gurung",
-    filter: "Completed",
-  },
-  {
-    id: 4,
-    title: "Kids Room Accent Wall",
-    status: "Posted",
-    statusClass: "bg-slate-100 text-slate-600 border-slate-200",
-    location: "Patan, Lalitpur",
-    filter: "All",
-  },
-];
 
 const RECENT_BIDS = [
   {
@@ -336,12 +297,46 @@ function StarRating({ rating }) {
 }
 
 export default function UserDashboard() {
+  const navigate = useNavigate();
   const [projectFilter, setProjectFilter] = useState("All");
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+    const fetchProjects = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8080/api/projects/user/${userId}`);
+        setProjects(response.data);
+      } catch (err) {
+        console.error("Failed to fetch projects", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, [navigate]);
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "Bidding":
+      case "In Progress":
+        return "bg-orange-50 text-[#FF8022] border-orange-200";
+      case "Completed":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      default:
+        return "bg-slate-100 text-slate-600 border-slate-200";
+    }
+  };
 
   const filteredProjects =
     projectFilter === "All"
-      ? PROJECTS
-      : PROJECTS.filter((p) => p.filter === projectFilter);
+      ? projects
+      : projects.filter((p) => p.status === projectFilter);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F3F4F6]">
@@ -426,95 +421,71 @@ export default function UserDashboard() {
                 </div>
 
                 <ul className="space-y-4">
-                  {filteredProjects.map((project) => (
-                    <li
-                      key={project.id}
-                      className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4 transition hover:border-neutral-200 sm:p-5"
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-heading text-sm font-bold text-slate-900 sm:text-base">
-                              {project.title}
-                            </h3>
-                            <span
-                              className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${project.statusClass}`}
-                            >
-                              {project.status}
-                            </span>
-                          </div>
-                          <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.75"
-                              aria-hidden
-                            >
-                              <path
-                                d="M12 21s-6-4.35-6-10a6 6 0 1112 0c0 5.65-6 10-6 10z"
-                                strokeLinecap="round"
-                              />
-                              <circle cx="12" cy="11" r="2.5" />
-                            </svg>
-                            {project.location}
-                          </p>
-                          {project.budget && (
-                            <p className="mt-1 text-xs text-slate-600">
-                              <span className="font-medium">Budget:</span>{" "}
-                              {project.budget}
-                              {project.bids != null && (
-                                <span className="text-slate-400">
-                                  {" "}
-                                  · {project.bids} bids
-                                </span>
-                              )}
-                            </p>
-                          )}
-                          {project.painter && (
-                            <p className="mt-1 text-xs text-slate-600">
-                              <span className="font-medium">Painter:</span>{" "}
-                              {project.painter}
-                            </p>
-                          )}
-                          {project.progress != null && (
-                            <div className="mt-3 max-w-md">
-                              <div className="mb-1 flex justify-between text-xs font-medium text-slate-600">
-                                <span>Progress</span>
-                                <span className="text-[#FF8022]">
-                                  {project.progress}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
-                                <div
-                                  className="h-full rounded-full bg-[#FF8022] transition-all"
-                                  style={{ width: `${project.progress}%` }}
-                                />
-                              </div>
+                  {loading ? (
+                    <li className="text-center py-10 text-slate-500">Loading projects...</li>
+                  ) : filteredProjects.length === 0 ? (
+                    <li className="text-center py-10 text-slate-500">No projects yet. Create your first one!</li>
+                  ) : (
+                    filteredProjects.map((project) => (
+                      <li
+                        key={project.id}
+                        className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4 transition hover:border-neutral-200 sm:p-5"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-heading text-sm font-bold text-slate-900 sm:text-base">
+                                {project.title}
+                              </h3>
+                              <span
+                                className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getStatusClass(project.status)}`}
+                              >
+                                {project.status}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                          <button
-                            type="button"
-                            className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-neutral-300"
-                          >
-                            View Details
-                          </button>
-                          {project.bids != null && (
-                            <button
-                              type="button"
+                            <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.75"
+                                aria-hidden
+                              >
+                                <path
+                                  d="M12 21s-6-4.35-6-10a6 6 0 1112 0c0 5.65-6 10-6 10z"
+                                  strokeLinecap="round"
+                                />
+                                <circle cx="12" cy="11" r="2.5" />
+                              </svg>
+                              {project.location}
+                            </p>
+                            {project.budget && (
+                              <p className="mt-1 text-xs text-slate-600">
+                                <span className="font-medium">Budget:</span>{" "}
+                                {project.budget}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 flex-wrap gap-2">
+                            <Link
+                              to={`/view-bids/${project.id}`}
                               className="rounded-lg border border-[#FF8022] bg-white px-3 py-2 text-xs font-semibold text-[#FF8022] transition hover:bg-orange-50"
                             >
-                              View Bids ({project.bids})
-                            </button>
-                          )}
+                              View Bids
+                            </Link>
+                            <Link
+                              to={`/view-project/${project.id}`}
+                              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-neutral-50"
+                            >
+                              View Details
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    ))
+                  )}
                 </ul>
               </section>
 

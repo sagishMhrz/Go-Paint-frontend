@@ -11,10 +11,14 @@ import UserDashboard from "./pages/user/UserDashboard";
 import UserProject from "./pages/user/UserProject";
 import NewProject from "./pages/user/NewProject";
 import ViewBids from "./pages/user/ViewBids";
+import ViewProject from "./pages/user/ViewProject";
 import UserSignUp from "./pages/user/UserSignUp";
 import UserProfile from "./pages/user/UserProfile";
 import PainterLayout from "./components/painter/Layout";
 import PainterDashboard from "./pages/painter/PainterDashboard";
+import BrowseProject from "./pages/painter/BrowseProject";
+import MyBids from "./pages/painter/MyBids";
+import PainterProfile from "./pages/painter/PainterProfile";
 import "./App.css";
 
 function App() {
@@ -28,8 +32,12 @@ function App() {
       <Route path="/user-projects" element={<UserProject />} />
       <Route path="/new-project" element={<NewProject />} />
       <Route path="/view-bids/:projectId" element={<ViewBids />} />
-      <Route path="/painter-dashboard" element={<PainterLayout />}>
-        <Route index element={<PainterDashboard />} />
+      <Route path="/view-project/:projectId" element={<ViewProject />} />
+      <Route element={<PainterLayout />}>
+        <Route path="/painter-dashboard" element={<PainterDashboard />} />
+        <Route path="/browse-projects" element={<BrowseProject />} />
+        <Route path="/my-bids" element={<MyBids />} />
+        <Route path="/painter-profile" element={<PainterProfile />} />
       </Route>
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />

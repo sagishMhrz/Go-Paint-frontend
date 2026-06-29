@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ASSIGNED_PROJECTS = [
   {
@@ -331,7 +332,53 @@ function StarRating({ rating }) {
 }
 
 export default function PainterDashboard() {
+  const navigate = useNavigate();
   const [bidFilter, setBidFilter] = useState("All");
+  const [assignedProjects, setAssignedProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+    const fetchAssignedProjects = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/api/projects/painter/${userId}/assigned`
+        );
+        
+        // We need to get the accepted bid amount for each project to display price
+        const projectsWithBidInfo = await Promise.all(
+          response.data.map(async (project) => {
+            // Get all bids for this project
+            const bidsResponse = await axios.get(
+              `http://localhost:8080/api/bids/project/${project.id}`
+            );
+            // Find the accepted bid
+            const acceptedBid = bidsResponse.data.find(
+              (bid) => bid.status === "ACCEPTED"
+            );
+            
+            return {
+              ...project,
+              client: project.user?.fullName || "Unknown Client",
+              dueDate: project.timeline || "Flexible",
+              price: acceptedBid ? `NPR ${acceptedBid.amount}` : "N/A",
+              progress: 0, // Default progress, can be updated later
+            };
+          })
+        );
+        setAssignedProjects(projectsWithBidInfo);
+      } catch (err) {
+        console.error("Failed to fetch assigned projects", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssignedProjects();
+  }, [navigate]);
 
   const filteredBids =
     bidFilter === "All"
@@ -365,87 +412,99 @@ export default function PainterDashboard() {
                   </a>
                 </div>
                 <ul className="space-y-4">
-                  {ASSIGNED_PROJECTS.map((project) => (
-                    <li
-                      key={project.id}
-                      className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5"
-                    >
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-bold text-slate-900 sm:text-base">
-                              {project.title}
-                            </h3>
-                            <span
-                              className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${project.statusClass}`}
-                            >
-                              {project.status}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                            <span>Client: {project.client}</span>
-                            <span>Due: {project.dueDate}</span>
-                            <span className="font-medium text-slate-700">
-                              {project.price}
-                            </span>
-                          </div>
-                          {project.progress != null && (
-                            <div className="mt-3 max-w-md">
-                              <div className="mb-1 flex justify-between text-xs font-medium text-slate-600">
-                                <span>Progress</span>
-                                <span className="text-[#FF8022]">
-                                  {project.progress}%
+                  {loading ? (
+                    <li className="text-center py-10 text-slate-500">Loading projects...</li>
+                  ) : assignedProjects.length > 0 ? (
+                    assignedProjects.map((project) => {
+                      const statusClass = 
+                        project.status === "Completed" 
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                          : "bg-orange-50 text-[#FF8022] border-orange-200";
+                      return (
+                        <li
+                          key={project.id}
+                          className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-sm font-bold text-slate-900 sm:text-base">
+                                  {project.title}
+                                </h3>
+                                <span
+                                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}
+                                >
+                                  {project.status}
                                 </span>
                               </div>
-                              <div className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
-                                <div
-                                  className="h-full rounded-full bg-[#FF8022] transition-all"
-                                  style={{ width: `${project.progress}%` }}
-                                />
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                <span>Client: {project.client}</span>
+                                <span>Due: {project.dueDate}</span>
+                                <span className="font-medium text-slate-700">
+                                  {project.price}
+                                </span>
                               </div>
+                              {project.progress != null && (
+                                <div className="mt-3 max-w-md">
+                                  <div className="mb-1 flex justify-between text-xs font-medium text-slate-600">
+                                    <span>Progress</span>
+                                    <span className="text-[#FF8022]">
+                                      {project.progress}%
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
+                                    <div
+                                      className="h-full rounded-full bg-[#FF8022] transition-all"
+                                      style={{ width: `${project.progress}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                          {project.status === "Completed" ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                aria-hidden
-                              >
-                                <path
-                                  d="M5 13l4 4L19 7"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              Done
-                            </span>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-neutral-300"
-                              >
-                                Update Progress
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-lg border border-[#FF8022] bg-white px-3 py-2 text-xs font-semibold text-[#FF8022] transition hover:bg-orange-50"
-                              >
-                                Message Client
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
+                            <div className="flex shrink-0 flex-wrap gap-2">
+                              {project.status === "Completed" ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    aria-hidden
+                                  >
+                                    <path
+                                      d="M5 13l4 4L19 7"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  Done
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-neutral-300"
+                                  >
+                                    Update Progress
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="rounded-lg border border-[#FF8022] bg-white px-3 py-2 text-xs font-semibold text-[#FF8022] transition hover:bg-orange-50"
+                                  >
+                                    Message Client
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li className="text-center py-10 text-slate-500">No assigned projects yet!</li>
+                  )}
                 </ul>
               </section>
 

@@ -1,72 +1,8 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/user/Header";
 import Footer from "../../components/user/Footer";
-
-const PROJECTS = {
-  1: {
-    id: 1,
-    title: "Living Room & Master Bedroom Repaint",
-    location: "Baneshwor, Kathmandu",
-    budget: "NPR 25,000 – 40,000",
-    totalBids: 6,
-  },
-  4: {
-    id: 4,
-    title: "Kids Room Accent Wall",
-    location: "Patan, Lalitpur",
-    budget: "NPR 8,000 – 15,000",
-    totalBids: 2,
-  },
-};
-
-const INITIAL_BIDS = [
-  {
-    id: 1,
-    name: "Rajesh Shrestha",
-    rating: 4.9,
-    reviews: 127,
-    verified: true,
-    amount: "NPR 32,000",
-    amountValue: 32000,
-    timeline: "6 days",
-    timelineDays: 6,
-    initials: "RS",
-    avatarBg: "from-teal-500 to-teal-600",
-    description:
-      "I have 8 years of experience in interior painting. I'll use premium Asian Paints for a smooth, long-lasting finish. Includes wall prep, 2 coats, and cleanup.",
-  },
-  {
-    id: 2,
-    name: "Suman Tamang",
-    rating: 4.7,
-    reviews: 89,
-    verified: true,
-    amount: "NPR 28,500",
-    amountValue: 28500,
-    timeline: "5 days",
-    timelineDays: 5,
-    initials: "ST",
-    avatarBg: "from-amber-500 to-orange-500",
-    description:
-      "Specialized in residential repaints across Kathmandu Valley. I'll handle furniture covering, minor wall repairs, and a spotless handover. Free color consultation included.",
-  },
-  {
-    id: 3,
-    name: "Bikash Gurung",
-    rating: 4.8,
-    reviews: 156,
-    verified: true,
-    amount: "NPR 35,000",
-    amountValue: 35000,
-    timeline: "8 days",
-    timelineDays: 8,
-    initials: "BG",
-    avatarBg: "from-violet-500 to-purple-600",
-    description:
-      "Certified painter with expertise in bedroom and living room projects. Using Berger Paints with primer coat included. 1-year workmanship warranty on all jobs.",
-  },
-];
+import axios from "axios";
 
 const SORT_OPTIONS = [
   { value: "rating", label: "Sort by Rating" },
@@ -129,12 +65,13 @@ function StarIcon() {
   );
 }
 
-function BidCard({ bid, status, onAccept, onReject }) {
-  const isAccepted = status === "accepted";
-  const isRejected = status === "rejected";
-  const isDisabled = status === "disabled";
+function BidCard({ bid, status, onAccept, onReject, projectStatus }) {
+  const isAccepted = status === "accepted" || bid.status === "ACCEPTED";
+  const isRejected = status === "rejected" || bid.status === "REJECTED";
+  const isProjectBiddingClosed = projectStatus !== "Bidding";
+  const isDisabled = isProjectBiddingClosed || status === "disabled" || bid.status === "ACCEPTED" || bid.status === "REJECTED";
 
-  if (isRejected) return null;
+  if (isRejected && isProjectBiddingClosed) return null;
 
   return (
     <article
@@ -277,57 +214,94 @@ function BidCard({ bid, status, onAccept, onReject }) {
 
 export default function ViewBids() {
   const { projectId } = useParams();
-  const project = PROJECTS[projectId] ?? PROJECTS[1];
-
-  const [bids, setBids] = useState(INITIAL_BIDS);
+  const navigate = useNavigate();
+  const [project, setProject] = useState(null);
+  const [bids, setBids] = useState([]);
   const [bidStatuses, setBidStatuses] = useState({});
   const [acceptedBidId, setAcceptedBidId] = useState(null);
   const [sortBy, setSortBy] = useState("rating");
   const [notice, setNotice] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const isProjectInBiddingStatus = () => project && project.status === "Bidding";
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projectRes, bidsRes] = await Promise.all([
+          axios.get(`http://localhost:8080/api/projects/${projectId}`),
+          axios.get(`http://localhost:8080/api/bids/project/${projectId}`)
+        ]);
+        setProject(projectRes.data);
+        setBids(bidsRes.data);
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [projectId]);
 
   const sortedBids = useMemo(() => {
     const list = [...bids];
     switch (sortBy) {
       case "price-asc":
-        return list.sort((a, b) => a.amountValue - b.amountValue);
+        return list.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
       case "price-desc":
-        return list.sort((a, b) => b.amountValue - a.amountValue);
-      case "timeline":
-        return list.sort((a, b) => a.timelineDays - b.timelineDays);
+        return list.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
       default:
-        return list.sort((a, b) => b.rating - a.rating);
+        return list;
     }
   }, [bids, sortBy]);
 
   const visibleCount = sortedBids.filter(
-    (b) => bidStatuses[b.id] !== "rejected"
+    (b) => bidStatuses[b.id] !== "rejected" && b.status !== "REJECTED"
   ).length;
 
-  const handleAccept = (bidId) => {
-    const bid = bids.find((b) => b.id === bidId);
-    setAcceptedBidId(bidId);
-    setBidStatuses((prev) => {
-      const next = { ...prev, [bidId]: "accepted" };
-      bids.forEach((b) => {
-        if (b.id !== bidId && next[b.id] !== "rejected") {
-          next[b.id] = "disabled";
-        }
+  const handleAccept = async (bidId) => {
+    try {
+      await axios.put(`http://localhost:8080/api/bids/${bidId}/accept`);
+      const bid = bids.find((b) => b.id === bidId);
+      setAcceptedBidId(bidId);
+      setBidStatuses((prev) => {
+        const next = { ...prev, [bidId]: "accepted" };
+        bids.forEach((b) => {
+          if (b.id !== bidId && next[b.id] !== "rejected") {
+            next[b.id] = "disabled";
+          }
+        });
+        return next;
       });
-      return next;
-    });
-    setNotice({
-      type: "success",
-      message: `You accepted ${bid?.name}'s bid of ${bid?.amount}. The painter will be notified.`,
-    });
+      setNotice({
+        type: "success",
+        message: `You accepted bid #${bidId}. The painter will be notified.`,
+      });
+      // Refresh bids to get updated status
+      const bidsRes = await axios.get(`http://localhost:8080/api/bids/project/${projectId}`);
+      setBids(bidsRes.data);
+    } catch (err) {
+      console.error("Failed to accept bid", err);
+      setNotice({ type: "error", message: "Failed to accept bid. Please try again." });
+    }
   };
 
-  const handleReject = (bidId) => {
-    const bid = bids.find((b) => b.id === bidId);
-    setBidStatuses((prev) => ({ ...prev, [bidId]: "rejected" }));
-    setNotice({
-      type: "info",
-      message: `${bid?.name}'s bid has been rejected.`,
-    });
+  const handleReject = async (bidId) => {
+    try {
+      await axios.put(`http://localhost:8080/api/bids/${bidId}/reject`);
+      const bid = bids.find((b) => b.id === bidId);
+      setBidStatuses((prev) => ({ ...prev, [bidId]: "rejected" }));
+      setNotice({
+        type: "info",
+        message: `Bid #${bidId} has been rejected.`,
+      });
+      // Refresh bids to get updated status
+      const bidsRes = await axios.get(`http://localhost:8080/api/bids/project/${projectId}`);
+      setBids(bidsRes.data);
+    } catch (err) {
+      console.error("Failed to reject bid", err);
+      setNotice({ type: "error", message: "Failed to reject bid. Please try again." });
+    }
   };
 
   return (
@@ -345,132 +319,190 @@ export default function ViewBids() {
               Dashboard
             </Link>
             <span className="mx-2 text-slate-300">/</span>
-            <Link to="/user-projects" className="transition hover:text-[#FF8022]">
-              Projects
-            </Link>
-            <span className="mx-2 text-slate-300">/</span>
             <span className="font-medium text-slate-800">Bids</span>
           </nav>
 
-          <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h1 className="font-heading text-xl font-bold text-slate-900 sm:text-2xl">
-                  {project.title}
-                </h1>
-                <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-                  <PinIcon />
-                  {project.location}
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                <p className="text-sm font-medium text-slate-700">
-                  Budget: {project.budget}
-                </p>
-                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-[#FF8022]">
-                  {project.totalBids} bids
-                </span>
-              </div>
+          {loading ? (
+            <div className="rounded-2xl border border-neutral-100 bg-white p-10 text-center">
+              <p className="text-slate-500">Loading...</p>
             </div>
-          </div>
-
-          {notice && (
-            <div
-              role="status"
-              className={`mt-5 rounded-xl border px-4 py-3 text-sm ${
-                notice.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-blue-200 bg-blue-50 text-blue-800"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p>{notice.message}</p>
-                <button
-                  type="button"
-                  onClick={() => setNotice(null)}
-                  className="shrink-0 text-current opacity-60 transition hover:opacity-100"
-                  aria-label="Dismiss notification"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden
-                  >
-                    <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-heading text-lg font-bold text-slate-900">
-              {visibleCount} Bid{visibleCount !== 1 ? "s" : ""} Received
-            </h2>
-            <div className="relative w-full sm:w-auto">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 transition focus:border-[#FF8022] focus:outline-none focus:ring-2 focus:ring-[#FF8022]/20 sm:min-w-[180px]"
-                aria-label="Sort bids"
+          ) : !project ? (
+            <div className="rounded-2xl border border-neutral-100 bg-white p-10 text-center">
+              <p className="text-slate-500">Project not found</p>
+              <Link
+                to="/user-dashboard"
+                className="mt-4 inline-block text-sm font-semibold text-[#FF8022] hover:underline"
               >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden
-                >
-                  <path
-                    d="M6 9l6 6 6-6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
+                Back to Dashboard
+              </Link>
             </div>
-          </div>
-
-          <div className="mt-5 space-y-4">
-            {visibleCount === 0 ? (
-              <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-                <p className="text-sm font-medium text-slate-600">
-                  {acceptedBidId
-                    ? "All other bids have been handled."
-                    : "No bids to display. All bids have been rejected."}
-                </p>
-                <Link
-                  to="/user-projects"
-                  className="mt-4 inline-block text-sm font-semibold text-[#FF8022] hover:underline"
-                >
-                  Back to Projects
-                </Link>
+          ) : (
+            <>
+              <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h1 className="font-heading text-xl font-bold text-slate-900 sm:text-2xl">
+                      {project.title}
+                    </h1>
+                    <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+                      <PinIcon />
+                      {project.location}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                    <p className="text-sm font-medium text-slate-700">
+                      Budget: {project.budget}
+                    </p>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      project.status === "Bidding" ? "bg-orange-50 text-[#FF8022]" :
+                      project.status === "In Progress" ? "bg-blue-50 text-blue-700" :
+                      "bg-emerald-50 text-emerald-700"
+                    }`}>
+                      {project.status}
+                    </span>
+                    <span className="rounded-full bg-neutral-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                      {bids.length} bids
+                    </span>
+                  </div>
+                </div>
               </div>
-            ) : (
-              sortedBids.map((bid) => (
-                <BidCard
-                  key={bid.id}
-                  bid={bid}
-                  status={bidStatuses[bid.id]}
-                  onAccept={handleAccept}
-                  onReject={handleReject}
-                />
-              ))
-            )}
-          </div>
+
+              {!isProjectInBiddingStatus() && (
+                <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  <p className="font-semibold">Bidding is closed for this project.</p>
+                  <p className="mt-1 text-xs">
+                    {project.status === "In Progress" 
+                      ? "The project is currently in progress." 
+                      : "The project has been completed."}
+                  </p>
+                </div>
+              )}
+
+              {notice && (
+                <div
+                  role="status"
+                  className={`mt-5 rounded-xl border px-4 py-3 text-sm ${
+                    notice.type === "success"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : notice.type === "error"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : "border-blue-200 bg-blue-50 text-blue-800"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p>{notice.message}</p>
+                    <button
+                      type="button"
+                      onClick={() => setNotice(null)}
+                      className="shrink-0 text-current opacity-60 transition hover:opacity-100"
+                      aria-label="Dismiss notification"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden
+                      >
+                        <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isProjectInBiddingStatus() && (
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="font-heading text-lg font-bold text-slate-900">
+                    {visibleCount} Bid{visibleCount !== 1 ? "s" : ""} Received
+                  </h2>
+                  <div className="relative w-full sm:w-auto">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 transition focus:border-[#FF8022] focus:outline-none focus:ring-2 focus:ring-[#FF8022]/20 sm:min-w-[180px]"
+                      aria-label="Sort bids"
+                    >
+                      {SORT_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden
+                      >
+                        <path
+                          d="M6 9l6 6 6-6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5 space-y-4">
+                {!isProjectInBiddingStatus() ? (
+                  <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
+                    <p className="text-sm font-medium text-slate-600">
+                      Bidding is closed for this project.
+                    </p>
+                    <Link
+                      to="/user-projects"
+                      className="mt-4 inline-block text-sm font-semibold text-[#FF8022] hover:underline"
+                    >
+                      Back to Projects
+                    </Link>
+                  </div>
+                ) : visibleCount === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
+                    <p className="text-sm font-medium text-slate-600">
+                      {acceptedBidId
+                        ? "All other bids have been handled."
+                        : "No bids yet! Check back later."}
+                    </p>
+                    <Link
+                      to="/user-dashboard"
+                      className="mt-4 inline-block text-sm font-semibold text-[#FF8022] hover:underline"
+                    >
+                      Back to Dashboard
+                    </Link>
+                  </div>
+                ) : (
+                  sortedBids.map((bid) => (
+                    <BidCard
+                      key={bid.id}
+                      bid={{
+                        ...bid,
+                        name: `Painter #${bid.painter?.id || bid.id}`,
+                        amount: `NPR ${bid.amount}`,
+                        rating: 4.5,
+                        reviews: 50,
+                        verified: true,
+                        initials: `P${bid.id}`,
+                        avatarBg: "from-teal-500 to-teal-600"
+                      }}
+                      status={bidStatuses[bid.id]}
+                      onAccept={handleAccept}
+                      onReject={handleReject}
+                      projectStatus={project.status}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
 
           <div className="mt-8 text-center">
             <Link

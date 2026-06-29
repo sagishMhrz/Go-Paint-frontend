@@ -1,63 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../../components/user/Header";
 import Footer from "../../components/user/Footer";
+import axios from "axios";
 
-const FILTERS = ["All", "Posted", "Bidding Open", "In Progress", "Completed"];
-
-const PROJECTS = [
-  {
-    id: 1,
-    title: "Living Room & Master Bedroom Repaint",
-    location: "Baneshwor, Kathmandu",
-    budget: "NPR 25,000 – 40,000",
-    date: "2024-04-20",
-    rooms: 2,
-    bids: 6,
-    status: "Bidding Open",
-    statusClass: "bg-orange-50 text-[#FF8022]",
-    filter: "Bidding Open",
-    actions: ["viewBids", "edit"],
-  },
-  {
-    id: 2,
-    title: "Full Apartment Interior – 2BHK",
-    location: "Lazimpat, Kathmandu",
-    budget: "NPR 35,000 – 50,000",
-    date: "2024-04-10",
-    rooms: 5,
-    bids: 9,
-    status: "In Progress",
-    statusClass: "bg-blue-50 text-blue-600",
-    filter: "In Progress",
-    progress: 60,
-    painter: "Rajesh Shrestha",
-  },
-  {
-    id: 3,
-    title: "Exterior Repaint – 2 Storey House",
-    location: "Bhaktapur",
-    budget: "NPR 70,000 – 90,000",
-    date: "2024-03-15",
-    rooms: 1,
-    bids: 11,
-    status: "Completed",
-    statusClass: "bg-emerald-50 text-emerald-700",
-    filter: "Completed",
-  },
-  {
-    id: 4,
-    title: "Kids Room Accent Wall",
-    location: "Patan, Lalitpur",
-    budget: "NPR 8,000 – 15,000",
-    date: "2024-04-24",
-    rooms: 1,
-    bids: 2,
-    status: "Posted",
-    statusClass: "bg-slate-100 text-slate-600",
-    filter: "Posted",
-  },
-];
+const FILTERS = ["All", "Bidding", "In Progress", "Completed"];
 
 function PinIcon() {
   return (
@@ -87,7 +34,20 @@ function MetaIcon({ children }) {
   );
 }
 
-function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
+function getStatusClass(status) {
+  switch (status) {
+    case "Bidding":
+      return "bg-orange-50 text-[#FF8022] border-orange-200";
+    case "In Progress":
+      return "bg-blue-50 text-blue-600 border-blue-200";
+    case "Completed":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200";
+  }
+}
+
+function ProjectCard({ project, selected, onSelect }) {
   return (
     <button
       type="button"
@@ -105,7 +65,7 @@ function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
               {project.title}
             </h3>
             <span
-              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${project.statusClass}`}
+              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusClass(project.status)}`}
             >
               {project.status}
             </span>
@@ -147,26 +107,28 @@ function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
               </svg>
-              {project.date}
+              {new Date(project.createdAt).toLocaleDateString()}
             </MetaIcon>
-            <MetaIcon>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                aria-hidden
-              >
-                <path
-                  d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {project.rooms} {project.rooms === 1 ? "room" : "rooms"}
-            </MetaIcon>
+            {project.rooms && project.rooms.length > 0 && (
+              <MetaIcon>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  aria-hidden
+                >
+                  <path
+                    d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {project.rooms.length} {project.rooms.length === 1 ? "room" : "rooms"}
+              </MetaIcon>
+            )}
             <MetaIcon>
               <svg
                 width="14"
@@ -183,27 +145,27 @@ function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
                   strokeLinejoin="round"
                 />
               </svg>
-              {project.bids} bids
+              {project.bidsCount} bids
             </MetaIcon>
           </div>
 
-          {project.progress != null && (
+          {project.status === "In Progress" && (
             <div className="mt-4">
               <div className="mb-1.5 flex justify-between text-xs font-medium text-slate-600">
                 <span>Progress</span>
-                <span className="text-[#FF8022]">{project.progress}%</span>
+                <span className="text-[#FF8022]">0%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
                 <div
                   className="h-full rounded-full bg-[#FF8022] transition-all"
-                  style={{ width: `${project.progress}%` }}
+                  style={{ width: "0%" }}
                 />
               </div>
-              {project.painter && (
+              {project.assignedPainter && (
                 <p className="mt-2 text-xs text-slate-600">
                   Assigned to:{" "}
                   <span className="font-semibold text-slate-800">
-                    {project.painter}
+                    {project.assignedPainter}
                   </span>
                 </p>
               )}
@@ -212,19 +174,19 @@ function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
         </div>
       </div>
 
-      {project.actions && (
+      {project.status === "Bidding" && (
         <div
           className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
+          <Link
+            to={`/view-bids/${project.id}`}
             className="rounded-lg border border-[#FF8022] bg-white px-4 py-2 text-xs font-semibold text-[#FF8022] transition hover:bg-orange-50"
           >
             View Bids
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            to={`/view-project/${project.id}`}
             className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-neutral-50"
           >
             <svg
@@ -243,14 +205,14 @@ function ProjectCard({ project, selected, onSelect, viewBidsPath }) {
               />
             </svg>
             Edit
-          </button>
+          </Link>
         </div>
       )}
     </button>
   );
 }
 
-function ProjectDetail({ project, onClose, viewBidsPath }) {
+function ProjectDetail({ project, onClose }) {
   if (!project) {
     return (
       <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-neutral-100 bg-white p-8 text-center shadow-sm lg:min-h-[480px]">
@@ -309,7 +271,7 @@ function ProjectDetail({ project, onClose, viewBidsPath }) {
         </button>
       </div>
       <span
-        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${project.statusClass}`}
+        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusClass(project.status)}`}
       >
         {project.status}
       </span>
@@ -324,51 +286,71 @@ function ProjectDetail({ project, onClose, viewBidsPath }) {
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-slate-500">Posted</dt>
-          <dd className="font-medium text-slate-800">{project.date}</dd>
+          <dd className="font-medium text-slate-800">
+            {new Date(project.createdAt).toLocaleDateString()}
+          </dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Rooms</dt>
-          <dd className="font-medium text-slate-800">{project.rooms}</dd>
-        </div>
+        {project.rooms && project.rooms.length > 0 && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-500">Rooms</dt>
+            <dd className="font-medium text-slate-800">{project.rooms.length}</dd>
+          </div>
+        )}
         <div className="flex justify-between gap-4">
           <dt className="text-slate-500">Bids</dt>
-          <dd className="font-medium text-slate-800">{project.bids}</dd>
+          <dd className="font-medium text-slate-800">{project.bidsCount}</dd>
         </div>
-        {project.painter && (
+        {project.assignedPainter && (
           <div className="flex justify-between gap-4">
             <dt className="text-slate-500">Painter</dt>
-            <dd className="font-medium text-slate-800">{project.painter}</dd>
+            <dd className="font-medium text-slate-800">{project.assignedPainter}</dd>
           </div>
         )}
       </dl>
-      {project.progress != null && (
+      {project.description && (
+        <div className="mt-5 border-t border-neutral-100 pt-5">
+          <dt className="text-sm text-slate-500 mb-2">Description</dt>
+          <p className="text-sm text-slate-800">{project.description}</p>
+        </div>
+      )}
+      {project.status === "In Progress" && (
         <div className="mt-5 border-t border-neutral-100 pt-5">
           <div className="mb-1.5 flex justify-between text-xs font-medium text-slate-600">
             <span>Progress</span>
-            <span className="text-[#FF8022]">{project.progress}%</span>
+            <span className="text-[#FF8022]">0%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
             <div
               className="h-full rounded-full bg-[#FF8022]"
-              style={{ width: `${project.progress}%` }}
+              style={{ width: "0%" }}
             />
           </div>
         </div>
       )}
-      {project.actions && (
+      {project.status === "Bidding" && (
         <div className="mt-6 flex flex-wrap gap-2">
           <Link
-            to={viewBidsPath}
+            to={`/view-bids/${project.id}`}
             className="flex-1 rounded-lg border border-[#FF8022] bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#FF8022] transition hover:bg-orange-50 sm:flex-none"
           >
             View Bids
           </Link>
-          <button
-            type="button"
+          <Link
+            to={`/view-project/${project.id}`}
             className="flex-1 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-neutral-50 sm:flex-none"
           >
             Edit Project
-          </button>
+          </Link>
+        </div>
+      )}
+      {project.status !== "Bidding" && (
+        <div className="mt-6">
+          <Link
+            to={`/view-project/${project.id}`}
+            className="w-full rounded-lg bg-[#FF8022] px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8721a]"
+          >
+            View Details
+          </Link>
         </div>
       )}
     </div>
@@ -376,13 +358,62 @@ function ProjectDetail({ project, onClose, viewBidsPath }) {
 }
 
 export default function UserProject() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchProjects = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/api/projects/user/${userId}`
+        );
+
+        const projectsWithDetails = await Promise.all(
+          response.data.map(async (project) => {
+            let bidsCount = 0;
+            let assignedPainter = null;
+            try {
+              const bidsResponse = await axios.get(
+                `http://localhost:8080/api/bids/project/${project.id}`
+              );
+              bidsCount = bidsResponse.data.length;
+              const acceptedBid = bidsResponse.data.find(
+                (bid) => bid.status === "ACCEPTED"
+              );
+              if (acceptedBid) {
+                assignedPainter = acceptedBid.painter?.fullName || "Unknown Painter";
+              }
+            } catch (err) {
+              console.error("Failed to fetch bids for project", project.id, err);
+            }
+            return { ...project, bidsCount, assignedPainter };
+          })
+        );
+
+        setProjects(projectsWithDetails);
+      } catch (err) {
+        console.error("Failed to fetch projects", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [navigate]);
 
   const filteredProjects =
     filter === "All"
-      ? PROJECTS
-      : PROJECTS.filter((p) => p.filter === filter);
+      ? projects
+      : projects.filter((p) => p.status === filter);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
@@ -435,7 +466,9 @@ export default function UserProject() {
 
           <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
             <div className="space-y-4 lg:col-span-3">
-              {filteredProjects.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-10 text-slate-500">Loading projects...</div>
+              ) : filteredProjects.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-neutral-200 bg-white p-8 text-center">
                   <p className="text-sm text-slate-500">
                     No projects match this filter.
@@ -448,7 +481,6 @@ export default function UserProject() {
                     project={project}
                     selected={selected?.id === project.id}
                     onSelect={setSelected}
-                    viewBidsPath={`/view-bids/${project.id}`}
                   />
                 ))
               )}
@@ -459,9 +491,6 @@ export default function UserProject() {
                 <ProjectDetail
                   project={selected}
                   onClose={() => setSelected(null)}
-                  viewBidsPath={
-                    selected ? `/view-bids/${selected.id}` : "/view-bids/1"
-                  }
                 />
               </div>
             </aside>
@@ -472,9 +501,6 @@ export default function UserProject() {
               <ProjectDetail
                 project={selected}
                 onClose={() => setSelected(null)}
-                viewBidsPath={
-                  selected ? `/view-bids/${selected.id}` : "/view-bids/1"
-                }
               />
             </div>
           )}

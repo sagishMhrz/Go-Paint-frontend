@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { setLoggedIn } from "../../components/user/Header";
+import { setPainterLoggedIn } from "../../components/painter/Header";
 import loginImage from "../../assets/login.png";
 import axios from "axios";
 
@@ -122,6 +123,7 @@ export default function Login() {
         setLoggedIn("user");
         navigate("/user-dashboard");
       } else if (role === "PAINTER") {
+        setPainterLoggedIn();
         navigate("/painter-dashboard");
       }
     } catch (err) {
